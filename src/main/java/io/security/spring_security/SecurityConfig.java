@@ -1,11 +1,14 @@
 package io.security.spring_security;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
@@ -21,10 +24,23 @@ import java.io.IOException;
 @EnableWebSecurity // 기본 선언 필요 --> WebSecurityConfiguration 설정 클래스를 임포트하여 실행시키는 어노테이션
 public class SecurityConfig extends WebSecurityConfigurerAdapter { //사용자 정의 보안기능 구현을 위해 상속을 받는다.
 
+    @Autowired
+    private UserDetailsService userDetailsService;
+
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        auth.inMemoryAuthentication().withUser("user").password("{noop}1111").roles("USER"); //noop - > password 암호화 유형,방식을 위한 prefix 필요
+        auth.inMemoryAuthentication().withUser("sys").password("{noop}1111").roles("SYS");
+        auth.inMemoryAuthentication().withUser("admin").password("{noop}1111").roles("ADMIN");
+
+
+
+
+    }
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http
+        http    .antMatcher("/")
                 .authorizeRequests()
                 .anyRequest().authenticated(); //요청에 대한 보안 검사가 실행되고 어떠한 요청에도 인증을 받도록 설정하였다.
                 //위는 인가 정책이다.
@@ -36,23 +52,23 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter { //사용자 �
                 .usernameParameter("userId")  // username 파라미터 설정
                 .passwordParameter("passwd")
                 .loginProcessingUrl("/login_proc") //폼 태그의 액션 url
-//                .successHandler(new AuthenticationSuccessHandler() {
-//                    @Override
-//                    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
-//                        System.out.println("authentication " + authentication.getName()); // 인증에 성공한 사용자 이름 출력
-//                        response.sendRedirect("/"); //루트 페이지로 이동
-//
-//
-//                    }
-//                }) //성공시 호출할 핸들러 , AuthenticationSuccessHandler() --> 인증 성공시 인증한 결과를 닮은 객체 까지 파라미터로 넘어온다. 이러한 정보를 활용하여 구체적인 로직들을 구현한다.
-//                .failureHandler(new AuthenticationFailureHandler() {
-//                    @Override
-//                    public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response, AuthenticationException exception) throws IOException, ServletException {
-//                        System.out.println("exception: " + exception.getMessage()); //예외에 메세지를 출력한다.
-//                        response.sendRedirect("/login"); //로그인 페이지로 이동
-//
-//                    }
-//                }) //인증예외에 객체를 파라미터로 전달한다.
+                .successHandler(new AuthenticationSuccessHandler() {
+                    @Override
+                    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+                        System.out.println("authentication " + authentication.getName()); // 인증에 성공한 사용자 이름 출력
+                        response.sendRedirect("/"); //루트 페이지로 이동
+
+
+                    }
+                }) //성공시 호출할 핸들러 , AuthenticationSuccessHandler() --> 인증 성공시 인증한 결과를 닮은 객체 까지 파라미터로 넘어온다. 이러한 정보를 활용하여 구체적인 로직들을 구현한다.
+                .failureHandler(new AuthenticationFailureHandler() {
+                    @Override
+                    public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response, AuthenticationException exception) throws IOException, ServletException {
+                        System.out.println("exception: " + exception.getMessage()); //예외에 메세지를 출력한다.
+                        response.sendRedirect("/login"); //로그인 페이지로 이동
+
+                    }
+                }) //인증예외에 객체를 파라미터로 전달한다.
                 .permitAll() //  위의 경로로 접근하는 모든 url은 접근이 가능하도록 설정해주어야 한다.
         ;
 
@@ -77,6 +93,20 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter { //사용자 �
                 .deleteCookies("remember-me") //remember-me 쿠키를 제거한다.
                 ;
 
+        http.
+                rememberMe()
+                .rememberMeParameter("remember")
+                .tokenValiditySeconds(3600)
+                .userDetailsService(userDetailsService)
+                ;
+
+
+        http.
+                sessionManagement()
+                .maximumSessions(1)
+                .maxSessionsPreventsLogin(true) //세션 초과시 - 현재 인증 시도하는 사용자의 인증을 실패시킨다.
+
+        ;
     }
 
 
