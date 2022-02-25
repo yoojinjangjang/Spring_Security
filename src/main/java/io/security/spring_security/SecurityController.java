@@ -17,4 +17,29 @@ public class SecurityController{
     }
 
 
+    @GetMapping("/user")
+    public String userPage(){
+        return "user can access";
+    }
+
+    @GetMapping("/admin/pay")
+    public String payPage(){
+        return "admin only can access";
+    }
+
+    @GetMapping("/admin/**")
+    public String admin(){
+        return "admin and sys can access";
+    }
+
+    @GetMapping("/login")
+    public String login(){
+        return "login";
+    }
+
+    @GetMapping("/denied")
+    public String denied(){
+        return "Access is denied";
+    }
+
 }
