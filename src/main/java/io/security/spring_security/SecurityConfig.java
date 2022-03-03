@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
@@ -30,8 +31,8 @@ import java.rmi.activation.ActivationGroup_Stub;
 
 @Configuration // 설정 클래스이기 떄문에
 @EnableWebSecurity // 기본 선언 필요 --> WebSecurityConfiguration 설정 클래스를 임포트하여 실행시키는 어노테이션
-@Order(0)
 public class SecurityConfig extends WebSecurityConfigurerAdapter { //사용자 정의 보안기능 구현을 위해 상속을 받는다.
+
     @Autowired
     private UserDetailsService userDetailsService;
 
@@ -47,27 +48,15 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter { //사용자 �
     @Override
     protected void configure(HttpSecurity http) throws Exception {
             http
-                    .antMatcher("/admin/**")
                     .authorizeRequests()
-                    .anyRequest().authenticated()
-                    .and()
-                    .httpBasic();
+                    .anyRequest().authenticated();
+
+            http
+                    .formLogin();
+
+        SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
 
 
 
     }
-}
-
-@Configuration
-@Order(1)
-class SecurityConfig2 extends WebSecurityConfigurerAdapter{
-
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http
-                .authorizeRequests()
-                .anyRequest().permitAll()
-                .and()
-                .formLogin();
-  }
 }
